@@ -19,58 +19,37 @@
 ##############################################################################
 
 import pooler
-import wizard
-
-_pricelist_form = '''<?xml version="1.0"?>
-<form string="Upgrade list price">
-    <separator string="Select a pricelist " colspan="4"/>
-    <field name="pricelist" colspan="4" nolabel="1"/>
-    <separator string="Select Product Categories " colspan="4"/>
-    <field name="product_category" colspan="4" nolabel="1"/>
-    <newline/>
-    <field name="upgrade" />
-</form>'''
-
-_done_form = '''<?xml version="1.0"?>
-<form string="Upgraded list price of prodcuts">
-    <field name="update_products"/>
-
-</form>'''
-
-_done_fields = {
-    'update_products': {
-        'string': 'Upgraded list price of Products',
-        'type': 'float',
-        'readonly': True
-    },
+from osv import osv, fields
 
 
-}
+class wizard_product_pricelist(osv.osv_memory):
+    _name = "wizard.product.pricelist"
 
-
-class wizard_product_pricelist(wizard.interface):
-
+    _columns = {
+              'pricelist':fields.many2one('product.pricelist', string=''),
+              'product_category':fields.many2many('product.category', string=''),
+              }
     def _get_pricelist(self, cr, uid, context):
         pricelist_obj = pooler.get_pool(cr.dbname).get('product.pricelist')
         ids = pricelist_obj.search(cr, uid, [('type', '=', 'internal'), ])
         pricelists = pricelist_obj.browse(cr, uid, ids)
         return [(pricelist.id, pricelist.name) for pricelist in pricelists]
 
-    def _upgrade_listprice(self, cr, uid, data, context):
+    def upgrade_listprice(self, cr, uid, ids, context):
         self.update_products = 0
-        categories_ids = data['form']['product_category']
+        categories = self.browse(cr, uid, ids[0]).product_category
         pricelist_obj = pooler.get_pool(cr.dbname).get('product.pricelist')
         cat_obj = pooler.get_pool(cr.dbname).get('product.category')
         product_obj = pooler.get_pool(cr.dbname).get('product.product')
-        pricelist_id = data['form']['pricelist']
+        pricelist_id = self.browse(cr, uid, ids[0]).pricelist.id
 
         def _upgrade(category_id):
-            if data['form']['upgrade'] is True:
-                child_ids = cat_obj.search(
+            child_ids = cat_obj.search(
                     cr, uid, [('parent_id', '=', category_id), ]
                 )
-                for child_id in child_ids:
-                    _upgrade(child_id)
+            for child_id in child_ids:
+                _upgrade(child_id)
+
             product_ids = product_obj.search(
                 cr, uid, [('categ_id', '=', category_id), ]
             )
@@ -85,50 +64,10 @@ class wizard_product_pricelist(wizard.interface):
                 )
                 self.update_products += 1
 
-        for category_id in categories_ids[0][2]:
-            _upgrade(category_id)
+        for category in categories:
+            _upgrade(category.id)
 
         return {'update_products': self.update_products}
 
-    _pricelist_fields = {
-        'pricelist': {
-            'string': 'Pricelist',
-            'type': 'many2one',
-            'relation': 'product.pricelist',
-            'domain': [('type', '=', 'internal')],
-            'required': True
-        },
-        'product_category': {
-            'string': 'Product Category',
-            'type': 'many2many',
-            'relation': 'product.category',
-            'required': True
-        },
-        'upgrade': {
-            'string': 'Upgrade Child categories',
-            'type': 'boolean',
-            'default': lambda x, y, z: True,
-        }
-    }
 
-    states = {
-        'init': {
-            'actions': [],
-            'result': {
-                'type': 'form',
-                'arch': _pricelist_form,
-                'fields': _pricelist_fields,
-                'state': [('end', 'Cancel'), ('upgrade', 'Upgrade')]
-            }
-        },
-        'upgrade': {
-            'actions': [_upgrade_listprice],
-            'result': {
-                'type': 'form',
-                'arch': _done_form,
-                'fields': _done_fields,
-                'state': [('end', 'End')]
-            }
-        }
-    }
-wizard_product_pricelist('product.listprice')
+wizard_product_pricelist()

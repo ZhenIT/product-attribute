@@ -1,7 +1,33 @@
 <?xml version="1.0" ?>
 <openerp>
 	<data>
-
+		<record id="act_wizard_product_pricelist" model="ir.actions.act_window">
+			<field name="name">Actualizar precios de venta</field>
+			<field name="type">ir.actions.act_window</field>
+			<field name="res_model">wizard.product.pricelist</field>
+			<field name="view_type">form</field>
+			<field name="view_mode">form</field>
+			<field name="target">new</field>
+		</record>
+		
+		<record id="view_wizard_product_pricelist" model="ir.ui.view">
+			<field name="name">wizard.product.pricelist.view</field>
+			<field name="model">wizard.product.pricelist</field>
+			<field name="type">form</field>
+			<field name="arch" type="xml">
+				<form string="Actualziar precios">
+	    			<separator string="Elegir tarifa" colspan="4"/>
+	    			<field name="pricelist" colspan="4" nolabel="1"/>
+	    			<separator string="Categorías" colspan="4"/>
+	    			<field name="product_category" colspan="4" nolabel="1"/>
+	            	<group col="4" colspan="4">
+	                	<button icon="gtk-cancel" special="cancel" string="Cancel"/>
+	                	<button icon="gtk-ok" name="upgrade_listprice" string="Update" type="object"/>
+	            	</group>
+            	</form>
+            </field>    		
+        </record>
+        
 		<wizard
 			string="Upgrade Product list price"
 			model="product.pricelist"
@@ -9,12 +35,15 @@
 			menu="False"
 			id="wizard_product_listprice"/>
 		
-        <menuitem
-            name="Pricelists"
+		<menuitem
+			name="Pricelists"
             id="menu_wizard_pricelist"
             parent="product.menu_product_pricelist_main"
         /> 
-		<menuitem name="Upgrade Product List price" id="menu_wizard_pricelist_upgrade" parent="menu_wizard_pricelist" action="wizard_product_listprice" type="wizard"/>
-
+		<menuitem 
+			name="Actualizar precios de venta" 
+			id="menu_wizard_pricelist_upgrade"
+			parent="menu_wizard_pricelist"
+			action="act_wizard_product_pricelist"/>
 	</data>
 </openerp>
